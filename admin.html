@@ -2,179 +2,50 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Épicerie de Nuit</title>
+    <title>Admin - Gestion Épicerie</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #050a1f; color: white; }
-        .font-bungee { font-family: 'Bungee', cursive; }
-        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; }
-        .neon-border-blue { border: 2px solid #00f2ff; box-shadow: 0 0 10px #00f2ff; }
-        input, select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px; color: white; }
-        input:focus { outline: none; border-color: #00f2ff; box-shadow: 0 0 5px #00f2ff; }
-    </style>
 </head>
-<body class="min-h-screen p-6 flex flex-col items-center">
-
-    <header class="w-full max-w-7xl flex justify-between items-center mb-10 pb-4 border-b border-white/10">
-        <h1 class="text-4xl font-bungee text-white tracking-tight">ADMIN PANEL</h1>
-        <div class="flex items-center gap-4">
-            <span class="text-sm text-neonBlue/80">Connecté en Admin</span>
-            <a href="index.html" class="text-xs px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition">Voir le Site</a>
-        </div>
-    </header>
-
-    <main class="w-full max-w-7xl space-y-8">
-        
-        <section class="glass-card p-8">
-            <h3 class="text-2xl font-bungee text-neonYellow mb-8">GESTION DU STOCK ET DES PRIX</h3>
-            
-            <div class="overflow-x-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-glass">
-                <table class="w-full text-sm text-left">
-                    <thead class="text-xs text-white/60 uppercase border-b border-white/10">
-                        <tr>
-                            <th scope="col" class="px-6 py-3">Produit</th>
-                            <th scope="col" class="px-6 py-3">Catégorie</th>
-                            <th scope="col" class="px-6 py-3">Prix (€)</th>
-                            <th scope="col" class="px-6 py-3">Stock (unités)</th>
-                            <th scope="col" class="px-6 py-3">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="products-table-body" class="divide-y divide-white/5">
-                        <tr>
-                            <td colspan="5" class="px-6 py-10 text-center text-neonBlue/60">Chargement...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        </main>
-
-    <div id="save-notif" class="hidden fixed bottom-6 right-6 bg-neonBlue text-neonBg px-6 py-3 rounded-xl font-bold shadow-neon-blue">
-        Modifications enregistrées !
+<body class="bg-slate-900 text-white p-8">
+    <h1 class="text-3xl font-bold mb-8">GESTION DES PRODUITS</h1>
+    <div class="bg-slate-800 rounded-lg overflow-hidden shadow-xl">
+        <table class="w-full text-left">
+            <thead class="bg-slate-700">
+                <tr>
+                    <th class="p-4">Produit</th>
+                    <th class="p-4">Prix (€)</th>
+                    <th class="p-4">Stock</th>
+                    <th class="p-4">Action</th>
+                </tr>
+            </thead>
+            <tbody id="admin-list"></tbody>
+        </table>
     </div>
 
     <script>
-        // === CONFIGURATION SUPABASE ===
-        // ⚠️ REMPLACE CES VALEURS PAR TES PROPRES CLÉS SUPABASE ⚠️
         const SUPABASE_URL = 'https://sthiubznmgzunzvdcvvy.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_Edkq-HmnWrrsoln89X24XQ_K5bSTO6Z';
-        let supabaseClient;
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        try {
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } catch(e) {
-            console.error("Supabase non initialisé :", e);
+        async function load() {
+            const { data } = await supabase.from('produits').select('*');
+            document.getElementById('admin-list').innerHTML = data.map(p => `
+                <tr class="border-b border-slate-700">
+                    <td class="p-4">${p.nom}</td>
+                    <td class="p-4"><input id="p-${p.id}" type="number" step="0.1" value="${p.prix}" class="bg-slate-900 px-2 py-1"></td>
+                    <td class="p-4"><input id="s-${p.id}" type="number" value="${p.stock}" class="bg-slate-900 px-2 py-1"></td>
+                    <td class="p-4"><button onclick="save('${p.id}')" class="bg-blue-600 px-4 py-1 rounded">OK</button></td>
+                </tr>
+            `).join('');
         }
 
-        let allProducts = [];
-        const tableBody = document.getElementById('products-table-body');
-
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', fetchAdminProducts);
-
-        // Récupérer tous les produits pour l'Admin
-        async function fetchAdminProducts() {
-            if(!supabaseClient) {
-                tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-neonPink">Erreur de configuration.</td></tr>';
-                return;
-            }
-
-            const { data, error } = await supabaseClient
-                .from('produits')
-                .select('*')
-                .order('nom');
-
-            if (error) {
-                console.error("Erreur :", error);
-                tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-neonPink">Impossible de charger les produits.</td></tr>';
-                return;
-            }
-
-            allProducts = data || [];
-            displayAdminProducts();
+        async function save(id) {
+            const prix = document.getElementById(`p-${id}`).value;
+            const stock = document.getElementById(`s-${id}`).value;
+            await supabase.from('produits').update({ prix, stock }).eq('id', id);
+            alert('Modifié !');
         }
-
-        // Afficher les produits dans le tableau Admin (mode édition)
-        function displayAdminProducts() {
-            if (allProducts.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-neonBlue/60">Aucun produit trouvé.</td></tr>';
-                return;
-            }
-
-            tableBody.innerHTML = '';
-
-            allProducts.forEach(p => {
-                const stockColor = p.stock > 10 ? 'text-white' : (p.stock > 0 ? 'text-neonYellow' : 'text-neonPink font-bold');
-                
-                tableBody.innerHTML += `
-                    <tr>
-                        <th scope="row" class="px-6 py-4 flex items-center gap-4 font-medium text-white">
-                             <img src="${p.image_url || 'https://via.placeholder.com/40'}" alt="${p.nom}" class="w-10 h-10 object-contain rounded bg-white/5 p-1">
-                             <span class="text-base">${p.nom}</span>
-                        </th>
-                        <td class="px-6 py-4 text-neonBlue text-xs uppercase">${p.categorie}</td>
-                        <td class="px-6 py-4">
-                            <input type="number" step="0.01" value="${parseFloat(p.prix).toFixed(2)}" class="w-24 px-2 py-1 bg-white/5 border border-white/10 rounded focus:border-neonYellow focus:ring-neonYellow" onchange="updateProductInState('${p.id}', 'prix', this.value)"> €
-                        </td>
-                        <td class="px-6 py-4">
-                            <input type="number" step="1" value="${p.stock}" class="w-24 px-2 py-1 bg-white/5 border border-white/10 rounded ${stockColor}" onchange="updateProductInState('${p.id}', 'stock', this.value)"> unités
-                        </td>
-                        <td class="px-6 py-4">
-                             <button onclick="saveProductChanges('${p.id}')" class="text-neonYellow text-xs px-3 py-1 bg-neonYellow/10 rounded hover:bg-neonYellow/20 transition">Sauvegarder</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        // Mettre à jour l'état local avant sauvegarde
-        window.updateProductInState = function(id, field, value) {
-            const product = allProducts.find(p => p.id === id);
-            if(product) {
-                // Conversion si nécessaire (nombre)
-                product[field] = (field === 'stock' ? parseInt(value) : parseFloat(value));
-                console.log(`Mise à jour locale (${field}) pour ${product.nom} : ${value}`);
-            }
-        }
-
-        // Sauvegarder les modifications d'un produit spécifique dans Supabase
-        window.saveProductChanges = async function(id) {
-            const product = allProducts.find(p => p.id === id);
-            if(!product) return;
-
-            // Préparation des données pour la mise à jour
-            const updateData = {
-                prix: product.prix,
-                stock: product.stock
-            };
-
-            const { data, error } = await supabaseClient
-                .from('produits')
-                .update(updateData)
-                .eq('id', id);
-
-            if (error) {
-                console.error("Erreur de sauvegarde :", error);
-                alert("Erreur lors de la sauvegarde.");
-            } else {
-                showSuccessNotification();
-                // Recharger pour rafraîchir l'affichage (notamment la couleur du stock)
-                fetchAdminProducts();
-            }
-        }
-        
-        // Notification de succès
-        function showSuccessNotification() {
-            const notif = document.getElementById('save-notif');
-            notif.classList.remove('hidden');
-            setTimeout(() => {
-                notif.classList.add('hidden');
-            }, 3000);
-        }
+        load();
     </script>
 </body>
 </html>
