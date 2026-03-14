@@ -46,13 +46,11 @@
     </header>
 
     <main class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- Catégories dynamiques injectées ici -->
         <div id="products-container" class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
             <p class="text-center text-neonBlue">Chargement des produits...</p>
         </div>
     </main>
 
-    <!-- Bouton Panier Flottant -->
     <div id="cart-button" class="fixed bottom-6 right-6 bg-neonPink text-white p-4 rounded-full cursor-pointer shadow-[0_0_15px_#ff00ff] hover:scale-110 transition-transform flex items-center justify-center">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -60,14 +58,12 @@
         <span id="cart-count" class="absolute -top-2 -right-2 bg-neonBlue text-neonBg font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
     </div>
 
-    <!-- Modal Panier -->
     <div id="cart-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
         <div class="glass-card w-full max-w-md p-6 relative">
             <button id="close-cart" class="absolute top-2 right-4 text-neonPink font-bold text-xl">&times;</button>
             <h3 class="text-2xl text-neonYellow glow-yellow mb-4 text-center">VOTRE PANIER</h3>
             <div id="cart-items" class="space-y-4 mb-6 max-h-64 overflow-y-auto">
-                <!-- Items injectés ici -->
-            </div>
+                </div>
             <div class="flex justify-between items-center mb-6 font-bungee text-xl">
                 <span>TOTAL:</span>
                 <span id="cart-total" class="text-neonPink">0.00€</span>
@@ -80,21 +76,20 @@
 
     <script>
         // === CONFIGURATION SUPABASE ===
-        // TODO: Remplacer par vos identifiants Supabase
         const SUPABASE_URL = 'https://sthiubznmgzunzvdcvvy.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_Edkq-HmnWrrsoln89X24XQ_K5bSTO6Z';
-        let supabase;
+        let supabaseClient;
+
         try {
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            // Initialisation correcte avec le client global supabase du CDN
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         } catch(e) {
-            console.error("Supabase non initialisé. Ajoutez vos clés.");
+            console.error("Supabase non initialisé :", e);
         }
 
-        // État du panier
         let cart = [];
         let products = [];
 
-        // DOM Elements
         const productsContainer = document.getElementById('products-container');
         const cartButton = document.getElementById('cart-button');
         const cartModal = document.getElementById('cart-modal');
@@ -104,19 +99,19 @@
         const cartCountSpan = document.getElementById('cart-count');
         const checkoutBtn = document.getElementById('checkout-btn');
 
-        // Récupérer les produits
         async function fetchProducts() {
-            if(!supabase) {
+            if(!supabaseClient) {
                 productsContainer.innerHTML = '<p class="text-neonPink text-center col-span-2">Erreur de configuration Supabase.</p>';
                 return;
             }
 
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('produits')
                 .select('*');
 
             if (error) {
                 console.error("Erreur de récupération des produits:", error);
+                productsContainer.innerHTML = '<p class="text-neonPink text-center col-span-2">Impossible de charger les produits.</p>';
                 return;
             }
 
@@ -126,7 +121,7 @@
 
         function displayProducts() {
             if (products.length === 0) {
-                productsContainer.innerHTML = '<p class="text-neonBlue text-center col-span-2">Aucun produit trouvé.</p>';
+                productsContainer.innerHTML = '<p class="text-neonBlue text-center col-span-2">Aucun produit trouvé dans la base.</p>';
                 return;
             }
 
@@ -136,14 +131,15 @@
             categories.forEach(category => {
                 const categoryDiv = document.createElement('div');
                 categoryDiv.className = 'glass-card p-4 flex flex-col';
+                const safeCatId = category.replace(/[^a-zA-Z]/g, '');
                 
                 categoryDiv.innerHTML = `
                     <h3 class="text-xl text-neonYellow mb-4 border-b border-neonBlue pb-2">${category.toUpperCase()}</h3>
-                    <div class="space-y-4 flex-1" id="cat-${category.replace(/[^a-zA-Z]/g, '')}"></div>
+                    <div class="space-y-4 flex-1" id="cat-${safeCatId}"></div>
                 `;
                 productsContainer.appendChild(categoryDiv);
 
-                const catContainer = categoryDiv.querySelector(`#cat-${category.replace(/[^a-zA-Z]/g, '')}`);
+                const catContainer = categoryDiv.querySelector(`#cat-${safeCatId}`);
                 
                 products.filter(p => p.categorie === category).forEach(p => {
                     catContainer.innerHTML += `
@@ -164,7 +160,6 @@
             });
         }
 
-        // Gestion du panier
         window.addToCart = function(id) {
             const product = products.find(p => p.id == id);
             if(product) {
@@ -193,7 +188,6 @@
             `).join('');
         }
 
-        // Checkout WhatsApp
         checkoutBtn.addEventListener('click', () => {
             if(cart.length === 0) return alert("Votre panier est vide.");
             
@@ -208,11 +202,11 @@
             message += `\nTotal: ${total.toFixed(2)}€\n\nMerci !`;
             
             const whatsappNumber = "33745517494";
-            const url = \`https://wa.me/\${whatsappNumber}?text=\${encodeURIComponent(message)}\`;
+            // Correction des backticks et de l'encodage
+            const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
             window.open(url, '_blank');
         });
 
-        // Modals
         cartButton.addEventListener('click', () => {
             updateCartUI();
             cartModal.classList.remove('hidden');
@@ -220,9 +214,8 @@
         
         closeCart.addEventListener('click', () => cartModal.classList.add('hidden'));
 
-        // Init
-        // Décommenter au-dessous une fois les clés insérées
-        // fetchProducts();
+        // Lancement initial
+        fetchProducts();
     </script>
 </body>
 </html>
