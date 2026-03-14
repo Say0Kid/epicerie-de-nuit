@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Épicerie de Nuit - Ouvert Tard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neonBg: '#050a1f',
+                        neonPink: '#ff00ff',
+                        neonBlue: '#00f2ff',
+                        neonYellow: '#ffea00'
+                    },
+                    fontFamily: {
+                        bungee: ['Bungee', 'cursive'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #050a1f; color: white; }
+        h1, h2, h3, .neon-text { font-family: 'Bungee', cursive; }
+        .glow-pink { text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 20px #ff00ff; }
+        .glow-blue { text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff, 0 0 20px #00f2ff; }
+        .glow-yellow { text-shadow: 0 0 5px #ffea00, 0 0 10px #ffea00, 0 0 20px #ffea00; }
+        .border-glow-blue { border-color: #00f2ff; box-shadow: 0 0 10px #00f2ff; }
+        .glass-card { background: rgba(0, 242, 255, 0.1); backdrop-filter: blur(5px); border: 2px solid #00f2ff; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); }
+    </style>
+</head>
+<body class="min-h-screen p-4 flex flex-col items-center">
+
+    <header class="w-full max-w-lg flex flex-col items-center mb-8 pt-4">
+        <h1 class="text-4xl text-neonYellow glow-yellow mb-2 text-center">ÉPICERIE DE NUIT</h1>
+        <h2 class="text-3xl text-neonPink glow-pink text-center">OUVERT TARD</h2>
+        <div class="mt-4 bg-neonBg border border-neonPink rounded-full px-6 py-2">
+            <p class="font-bungee text-white">COMMANDER : <span class="text-neonBlue">07 45 51 74 94</span></p>
+        </div>
+    </header>
+
+    <main class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Catégories dynamiques injectées ici -->
+        <div id="products-container" class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <p class="text-center text-neonBlue">Chargement des produits...</p>
+        </div>
+    </main>
+
+    <!-- Bouton Panier Flottant -->
+    <div id="cart-button" class="fixed bottom-6 right-6 bg-neonPink text-white p-4 rounded-full cursor-pointer shadow-[0_0_15px_#ff00ff] hover:scale-110 transition-transform flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+        <span id="cart-count" class="absolute -top-2 -right-2 bg-neonBlue text-neonBg font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
+    </div>
+
+    <!-- Modal Panier -->
+    <div id="cart-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div class="glass-card w-full max-w-md p-6 relative">
+            <button id="close-cart" class="absolute top-2 right-4 text-neonPink font-bold text-xl">&times;</button>
+            <h3 class="text-2xl text-neonYellow glow-yellow mb-4 text-center">VOTRE PANIER</h3>
+            <div id="cart-items" class="space-y-4 mb-6 max-h-64 overflow-y-auto">
+                <!-- Items injectés ici -->
+            </div>
+            <div class="flex justify-between items-center mb-6 font-bungee text-xl">
+                <span>TOTAL:</span>
+                <span id="cart-total" class="text-neonPink">0.00€</span>
+            </div>
+            <button id="checkout-btn" class="w-full py-3 bg-neonPink text-white font-bungee rounded-md shadow-[0_0_10px_#ff00ff] hover:bg-pink-600 transition-colors">
+                COMMANDER SUR WHATSAPP
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // === CONFIGURATION SUPABASE ===
+        // TODO: Remplacer par vos identifiants Supabase
+        const SUPABASE_URL = 'VOTRE_SUPABASE_URL';
+        const SUPABASE_KEY = 'VOTRE_SUPABASE_ANON_KEY';
+        
+        let supabase;
+        try {
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch(e) {
+            console.error("Supabase non initialisé. Ajoutez vos clés.");
+        }
+
+        // État du panier
+        let cart = [];
+        let products = [];
+
+        // DOM Elements
+        const productsContainer = document.getElementById('products-container');
+        const cartButton = document.getElementById('cart-button');
+        const cartModal = document.getElementById('cart-modal');
+        const closeCart = document.getElementById('close-cart');
+        const cartItemsDiv = document.getElementById('cart-items');
+        const cartTotalSpan = document.getElementById('cart-total');
+        const cartCountSpan = document.getElementById('cart-count');
+        const checkoutBtn = document.getElementById('checkout-btn');
+
+        // Récupérer les produits
+        async function fetchProducts() {
+            if(!supabase) {
+                productsContainer.innerHTML = '<p class="text-neonPink text-center col-span-2">Erreur de configuration Supabase.</p>';
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('produits')
+                .select('*');
+
+            if (error) {
+                console.error("Erreur de récupération des produits:", error);
+                return;
+            }
+
+            products = data || [];
+            displayProducts();
+        }
+
+        function displayProducts() {
+            if (products.length === 0) {
+                productsContainer.innerHTML = '<p class="text-neonBlue text-center col-span-2">Aucun produit trouvé.</p>';
+                return;
+            }
+
+            const categories = [...new Set(products.map(p => p.categorie))];
+            productsContainer.innerHTML = '';
+
+            categories.forEach(category => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'glass-card p-4 flex flex-col';
+                
+                categoryDiv.innerHTML = `
+                    <h3 class="text-xl text-neonYellow mb-4 border-b border-neonBlue pb-2">${category.toUpperCase()}</h3>
+                    <div class="space-y-4 flex-1" id="cat-${category.replace(/[^a-zA-Z]/g, '')}"></div>
+                `;
+                productsContainer.appendChild(categoryDiv);
+
+                const catContainer = categoryDiv.querySelector(`#cat-${category.replace(/[^a-zA-Z]/g, '')}`);
+                
+                products.filter(p => p.categorie === category).forEach(p => {
+                    catContainer.innerHTML += `
+                        <div class="flex justify-between items-center bg-[#0a1538] p-3 rounded border border-neonBlue">
+                            <div class="flex items-center space-x-3">
+                                <img src="${p.image_url || 'https://via.placeholder.com/40'}" alt="${p.nom}" class="w-10 h-10 object-contain">
+                                <div>
+                                    <p class="font-bungee text-sm">${p.nom}</p>
+                                    <p class="text-neonPink font-bold">${parseFloat(p.prix).toFixed(2)}€</p>
+                                </div>
+                            </div>
+                            <button onclick="addToCart('${p.id}')" class="bg-neonBg border border-neonYellow text-neonYellow px-3 py-1 rounded hover:bg-neonYellow hover:text-black transition-colors">
+                                +
+                            </button>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        // Gestion du panier
+        window.addToCart = function(id) {
+            const product = products.find(p => p.id == id);
+            if(product) {
+                const item = cart.find(i => i.id == id);
+                if(item) {
+                    item.quantity++;
+                } else {
+                    cart.push({...product, quantity: 1});
+                }
+                updateCartUI();
+            }
+        };
+
+        function updateCartUI() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.prix * item.quantity), 0);
+            
+            cartCountSpan.textContent = totalItems;
+            cartTotalSpan.textContent = totalPrice.toFixed(2) + '€';
+
+            cartItemsDiv.innerHTML = cart.map(item => `
+                <div class="flex justify-between items-center text-sm">
+                    <span class="font-bungee">${item.quantity}x ${item.nom}</span>
+                    <span class="text-neonBlue">${(item.prix * item.quantity).toFixed(2)}€</span>
+                </div>
+            `).join('');
+        }
+
+        // Checkout WhatsApp
+        checkoutBtn.addEventListener('click', () => {
+            if(cart.length === 0) return alert("Votre panier est vide.");
+            
+            let message = "Bonjour Epicerie de Nuit ! Je souhaite commander :\n\n";
+            let total = 0;
+            
+            cart.forEach(item => {
+                message += `- ${item.quantity}x ${item.nom} (${(item.prix * item.quantity).toFixed(2)}€)\n`;
+                total += item.prix * item.quantity;
+            });
+            
+            message += `\nTotal: ${total.toFixed(2)}€\n\nMerci !`;
+            
+            const whatsappNumber = "33745517494";
+            const url = \`https://wa.me/\${whatsappNumber}?text=\${encodeURIComponent(message)}\`;
+            window.open(url, '_blank');
+        });
+
+        // Modals
+        cartButton.addEventListener('click', () => {
+            updateCartUI();
+            cartModal.classList.remove('hidden');
+        });
+        
+        closeCart.addEventListener('click', () => cartModal.classList.add('hidden'));
+
+        // Init
+        // Décommenter au-dessous une fois les clés insérées
+        // fetchProducts();
+    </script>
+</body>
+</html>
