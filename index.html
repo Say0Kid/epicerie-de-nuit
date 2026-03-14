@@ -3,313 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Épicerie de Nuit - Cyberpunk Édition</title>
+    <title>Épicerie de Nuit - Cyberpunk</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        neonBg: '#050a1f',
-                        neonPink: '#ff00ff',
-                        neonBlue: '#00f2ff',
-                        neonYellow: '#ffea00',
-                        glass: 'rgba(0, 242, 255, 0.1)'
-                    },
-                    fontFamily: {
-                        bungee: ['Bungee', 'cursive'],
-                        inter: ['Inter', 'sans-serif']
-                    },
-                    boxShadow: {
-                        'neon-pink': '0 0 10px #ff00ff, 0 0 20px #ff00ff',
-                        'neon-blue': '0 0 10px #00f2ff, 0 0 20px #00f2ff',
-                        'neon-yellow': '0 0 10px #ffea00, 0 0 20px #ffea00'
-                    }
+                    colors: { neonBg: '#050a1f', neonPink: '#ff00ff', neonBlue: '#00f2ff', neonYellow: '#ffea00' },
+                    fontFamily: { bungee: ['Bungee', 'cursive'], inter: ['Inter', 'sans-serif'] }
                 }
             }
         }
     </script>
-    
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #050a1f; color: white; margin: 0; }
-        h1, h2, h3, .neon-text, .font-bungee { font-family: 'Bungee', cursive; }
-        .glow-pink { text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 20px #ff00ff; }
-        .glow-blue { text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff, 0 0 20px #00f2ff; }
-        .glow-yellow { text-shadow: 0 0 5px #ffea00, 0 0 10px #ffea00, 0 0 20px #ffea00; }
-        .glass-card { background: rgba(0, 242, 255, 0.05); backdrop-filter: blur(5px); border: 2px solid #00f2ff; border-radius: 12px; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); }
-        .neon-border-pink { border: 2px solid #ff00ff; box-shadow: 0 0 10px #ff00ff; }
+        body { font-family: 'Inter', sans-serif; background-color: #050a1f; color: white; overflow-x: hidden; }
+        .font-bungee { font-family: 'Bungee', cursive; }
+        .glow-pink { text-shadow: 0 0 10px #ff00ff; }
+        .glow-blue { text-shadow: 0 0 10px #00f2ff; }
+        .glow-yellow { text-shadow: 0 0 10px #ffea00; }
+        .glass-card { background: rgba(0, 242, 255, 0.05); backdrop-filter: blur(10px); border: 2px solid #00f2ff; border-radius: 15px; box-shadow: 0 0 20px rgba(0, 242, 255, 0.2); }
+        .nav-link { font-family: 'Bungee'; font-size: 10px; cursor: pointer; transition: 0.3s; }
+        .nav-link:hover { color: #ff00ff; text-shadow: 0 0 5px #ff00ff; }
     </style>
 </head>
-<body class="min-h-screen p-0 m-0 flex flex-col items-center">
+<body class="min-h-screen">
 
-    <nav class="w-full max-w-7xl flex justify-between items-center py-4 px-6 border-b border-neonBlue/30 text-[11px] font-bungee uppercase tracking-wider">
-        <div class="flex items-center gap-2 cursor-pointer hover:text-neonPink transition"><span class="text-neonPink text-lg">☰</span> MENU</div>
-        <div id="nav-cart" class="flex items-center gap-2 cursor-pointer text-neonBlue hover:text-white transition"><span class="text-lg">🛒</span> PANIER</div>
-        <div class="flex items-center gap-2 cursor-pointer hover:text-neonYellow transition"><span class="text-neonYellow text-lg">👤</span> COMPTE</div>
-        <div class="flex items-center gap-2 cursor-pointer hover:text-neonBlue transition"><span class="text-lg">🚚</span> SUIVI</div>
+    <nav class="w-full flex justify-between items-center py-4 px-8 border-b border-neonBlue/20">
+        <div class="nav-link">☰ MENU</div>
+        <div class="nav-link text-neonBlue" onclick="toggleCart()">🛒 PANIER (<span id="cart-count">0</span>)</div>
+        <div class="nav-link text-neonYellow" onclick="window.location.href='admin.html'">👤 ADMIN</div>
+        <div class="nav-link">🚚 SUIVI</div>
     </nav>
 
-    <header class="text-center mt-8 mb-12">
-        <h1 class="text-6xl text-neonYellow glow-yellow italic tracking-tight">ÉPICERIE</h1>
-        <h1 class="text-8xl text-neonPink glow-pink -mt-4 tracking-tighter">DE NUIT</h1>
-        <div class="inline-block bg-white text-black px-6 py-2 mt-4 font-bungee text-xl shadow-lg transform -rotate-1">
-            LIVRAISON NOCTURNE
-        </div>
-        <div class="mt-6 font-bungee text-white text-xl">
-            COMMANDER : <span class="text-neonBlue glow-blue">07 45 51 74 94</span>
-        </div>
+    <header class="text-center my-10">
+        <h1 class="text-5xl md:text-7xl text-neonYellow glow-yellow italic font-bungee">ÉPICERIE</h1>
+        <h1 class="text-6xl md:text-8xl text-neonPink glow-pink -mt-4 font-bungee">DE NUIT</h1>
+        <div class="inline-block bg-white text-black px-6 py-1 mt-4 font-bungee text-xl -rotate-2">OUVERT 7J/7</div>
     </header>
 
-    <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 pb-16">
+    <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 pb-20">
         
-        <section class="glass-card p-6 flex flex-col">
-            <h3 class="text-neonYellow text-base mb-6 font-bungee border-b border-neonBlue/50 pb-2 flex items-center gap-2">
-                🥤 BOISSONS FRAÎCHES
-            </h3>
-            <div id="cat-boissons" class="space-y-4 flex-1">
-                <p class="text-center text-neonBlue/60">Chargement...</p>
-            </div>
+        <section class="glass-card p-6">
+            <h3 class="text-neonBlue font-bungee mb-6 border-b border-neonBlue/30 pb-2">🥤 BOISSONS</h3>
+            <div id="cat-boissons" class="space-y-4"></div>
         </section>
 
-        <section class="glass-card p-6 flex flex-col">
-            <h3 class="text-neonYellow text-base mb-6 font-bungee border-b border-neonBlue/50 pb-2 flex items-center gap-2">
-                🍿 SNACKS ET DOUCEURS
-            </h3>
-            <div id="cat-snacks" class="space-y-4 flex-1">
-                <p class="text-center text-neonBlue/60">Chargement...</p>
-            </div>
-            
-            <div class="mt-10 border-t border-neonBlue/50 pt-4">
-                 <h3 class="text-neonYellow text-sm mb-4 font-bungee flex items-center gap-2">
-                    🚬 AUTRES ARTICLES
-                 </h3>
-                 <div id="cat-autres" class="space-y-4">
-                    </div>
-            </div>
+        <section class="glass-card p-6">
+            <h3 class="text-neonPink font-bungee mb-6 border-b border-neonPink/30 pb-2">🍿 SNACKS</h3>
+            <div id="cat-snacks" class="space-y-4"></div>
         </section>
 
-        <section class="glass-card p-6 flex flex-col">
-            <h3 class="text-neonYellow text-base mb-6 font-bungee border-b border-neonBlue/50 pb-2 flex items-center gap-2">
-                📍 LIVE ORDER TRACKER
-            </h3>
-            <div class="relative flex-1 min-h-[400px] bg-slate-900 rounded-xl border-2 border-neonBlue/50 overflow-hidden shadow-inner">
-                <div class="absolute inset-0 opacity-20 bg-[url('https://api.maptiler.com/maps/toner/256/{z}/{x}/{y}.png')] bg-repeat"></div>
-                
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                    <div class="text-6xl animate-bounce">🛵</div>
-                    <div class="mt-2 px-3 py-1 bg-neonPink/20 text-neonPink text-xs rounded-full border border-neonPink/50 font-bold">
-                        En cours...
-                    </div>
+        <section class="glass-card p-6">
+            <h3 class="text-neonYellow font-bungee mb-6 border-b border-neonYellow/30 pb-2">📍 LIVE TRACKER</h3>
+            <div class="relative h-64 bg-slate-900 rounded-lg border border-neonBlue/50 overflow-hidden">
+                <div class="absolute inset-0 opacity-30 bg-[url('https://www.google.com/maps/vt/pb=!1m4!1m3!1i13!2i4121!3i2702!2m3!1e0!2sm!3i411084220!3m8!2sen!3sus!5e1105!12m4!1e68!2m2!1sset!2sRoadmap!4e0!5m1!1f2!23i1301875')] bg-center"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="text-5xl animate-bounce">🛵</span>
                 </div>
             </div>
+            <div class="mt-4 p-3 bg-white/5 rounded text-xs text-center text-neonBlue italic">Livraison estimée : 20-30 min</div>
         </section>
     </main>
 
-    <div id="cart-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-        <div class="glass-card w-full max-w-lg p-8 relative neon-border-pink">
-            <button id="close-cart" class="absolute top-4 right-6 text-neonPink font-bold text-2xl hover:scale-120 transition">&times;</button>
-            <h3 class="text-3xl text-neonYellow glow-yellow mb-8 text-center font-bungee">VOTRE PANIER</h3>
-            <div id="cart-items" class="space-y-5 mb-8 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-neonBlue scrollbar-track-glass">
-                <p class="text-center text-neonBlue/60">Votre panier est vide.</p>
+    <div id="cart-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-md p-8 border-neonPink shadow-[0_0_30px_#ff00ff]">
+            <h2 class="text-3xl font-bungee text-neonYellow glow-yellow mb-6 text-center">PANIER</h2>
+            <div id="cart-items" class="space-y-4 max-h-60 overflow-y-auto mb-6"></div>
+            <div class="flex justify-between font-bungee text-2xl border-t border-white/20 pt-4 mb-6">
+                <span>TOTAL:</span>
+                <span id="cart-total" class="text-neonPink">0.00€</span>
             </div>
-            <div class="flex justify-between items-center mb-8 font-bungee text-2xl border-t border-neonBlue/50 pt-5">
-                <span>TOTAL :</span>
-                <span id="cart-total" class="text-neonPink glow-pink">0.00€</span>
-            </div>
-            <button id="checkout-btn" class="w-full py-4 bg-neonPink text-white font-bungee text-xl rounded-full shadow-neon-pink hover:bg-pink-600 transition-colors uppercase tracking-widest">
-                COMMANDER SUR WHATSAPP
-            </button>
+            <button onclick="checkout()" class="w-full py-4 bg-neonPink font-bungee text-white rounded-full shadow-lg hover:scale-105 transition">COMMANDER (WHATSAPP)</button>
+            <button onclick="toggleCart()" class="w-full mt-4 text-xs text-white/50 font-bungee">FERMER</button>
         </div>
     </div>
 
     <script>
-        // === CONFIGURATION SUPABASE ===
-        // ⚠️ REMPLACE CES VALEURS PAR TES PROPRES CLÉS SUPABASE ⚠️
         const SUPABASE_URL = 'https://sthiubznmgzunzvdcvvy.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_Edkq-HmnWrrsoln89X24XQ_K5bSTO6Z';
-        let supabaseClient;
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        try {
-            // Initialisation avec le client global supabase chargé via CDN
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } catch(e) {
-            console.error("Supabase non initialisé :", e);
-        }
-
-        // État du panier et des produits
+        let products = [];
         let cart = [];
-        let allProducts = [];
 
-        // Éléments du DOM
-        const cartModal = document.getElementById('cart-modal');
-        const cartItemsDiv = document.getElementById('cart-items');
-        const cartTotalSpan = document.getElementById('cart-total');
-
-        // Initialisation de la page
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchProducts();
-            
-            // Gestionnaires d'événements pour le panier
-            document.getElementById('nav-cart').addEventListener('click', toggleCart);
-            document.getElementById('close-cart').addEventListener('click', toggleCart);
-            document.getElementById('checkout-btn').addEventListener('click', checkoutWhatsApp);
-        });
-
-        // Fonction pour activer/désactiver l'affichage du panier
-        function toggleCart() {
-            updateCartUI();
-            cartModal.classList.toggle('hidden');
-        }
-
-        // Récupérer les produits depuis Supabase
         async function fetchProducts() {
-            const containers = {
-                boissons: document.getElementById('cat-boissons'),
-                snacks: document.getElementById('cat-snacks'),
-                autres: document.getElementById('cat-autres')
-            };
-
-            if(!supabaseClient) {
-                containers.boissons.innerHTML = containers.snacks.innerHTML = '<p class="text-neonPink text-center">Erreur de configuration.</p>';
-                return;
+            const { data, error } = await supabase.from('produits').select('*');
+            if (!error) {
+                products = data;
+                renderProducts();
             }
-
-            // Requête pour récupérer tous les produits
-            const { data, error } = await supabaseClient
-                .from('produits')
-                .select('*');
-
-            if (error) {
-                console.error("Erreur de récupération :", error);
-                containers.boissons.innerHTML = containers.snacks.innerHTML = '<p class="text-neonPink text-center">Impossible de charger les produits.</p>';
-                return;
-            }
-
-            allProducts = data || [];
-            displayProducts(containers);
         }
 
-        // Afficher les produits dans leurs catégories respectives (basé sur le design de l'image)
-        function displayProducts(containers) {
-            // Vider les conteneurs
-            Object.values(containers).forEach(c => c.innerHTML = '');
+        function renderProducts() {
+            const cats = { boissons: document.getElementById('cat-boissons'), snacks: document.getElementById('cat-snacks') };
+            Object.values(cats).forEach(c => c.innerHTML = '');
 
-            // Filtrer et afficher pour chaque catégorie
-            const categoriesToDisplay = [
-                { id: 'boissons', container: containers.boissons },
-                { id: 'snacks', container: containers.snacks },
-                { id: 'autres', container: containers.autres }
-            ];
-
-            categoriesToDisplay.forEach(cat => {
-                const filteredProducts = allProducts.filter(p => p.categorie === cat.id);
-                
-                if (filteredProducts.length === 0 && cat.id !== 'autres') {
-                   cat.container.innerHTML = '<p class="text-center text-neonBlue/60 text-xs">Aucun produit.</p>';
-                   return;
-                }
-
-                filteredProducts.forEach(p => {
-                    const price = parseFloat(p.prix).toFixed(2);
-                    const stockStatus = p.stock > 0 ? '' : 'opacity-50 pointer-events-none';
-                    const stockText = p.stock > 0 ? '' : '<span class="text-neonPink text-[10px] ml-1">(Rupture)</span>';
-
-                    cat.container.innerHTML += `
-                        <div class="flex justify-between items-center bg-[#0a1538] p-4 rounded-lg border-2 border-neonBlue ${stockStatus}">
-                            <div class="flex items-center space-x-4">
-                                <img src="${p.image_url || 'https://via.placeholder.com/60'}" alt="${p.nom}" class="w-14 h-14 object-contain rounded">
-                                <div>
-                                    <p class="font-bungee text-sm tracking-tight text-white">${p.nom}${stockText}</p>
-                                    <p class="text-neonPink font-bold text-lg glow-pink">${price}€</p>
-                                </div>
+            products.forEach(p => {
+                const html = `
+                    <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-neonBlue/20">
+                        <div class="flex items-center gap-3">
+                            <img src="${p.image_url}" class="w-12 h-12 object-contain">
+                            <div>
+                                <p class="font-bold text-sm">${p.nom}</p>
+                                <p class="text-neonPink font-bungee">${p.prix}€</p>
                             </div>
-                            <button onclick="addToCart('${p.id}')" class="bg-neonBg border-2 border-neonYellow text-neonYellow px-5 py-2 rounded-lg font-bungee text-xl shadow-inner hover:bg-neonYellow hover:text-black transition-all hover:scale-105 ${p.stock > 0 ? '' : 'cursor-not-allowed'}">
-                                +
-                            </button>
                         </div>
-                    `;
-                });
+                        <button onclick="addToCart('${p.id}')" class="bg-neonBlue/10 border border-neonBlue text-neonBlue px-3 py-1 rounded-full font-bungee hover:bg-neonBlue hover:text-black">+</button>
+                    </div>`;
+                if (cats[p.categorie]) cats[p.categorie].innerHTML += html;
             });
         }
 
-        // Ajouter un produit au panier
-        window.addToCart = function(id) {
-            const product = allProducts.find(p => p.id === id);
-            if(product && product.stock > 0) {
-                const item = cart.find(i => i.id === id);
-                if(item) {
-                    item.quantity++;
-                } else {
-                    cart.push({...product, quantity: 1});
-                }
-                updateCartUI();
-                
-                // Petit feedback visuel (optionnel)
-                console.log(`Ajouté : ${product.nom}`);
-            } else {
-                alert("Désolé, ce produit n'est plus en stock.");
-            }
-        };
+        function addToCart(id) {
+            const p = products.find(prod => prod.id === id);
+            const exists = cart.find(item => item.id === id);
+            exists ? exists.qty++ : cart.push({...p, qty: 1});
+            updateUI();
+        }
 
-        // Mettre à jour l'interface utilisateur du panier
-        function updateCartUI() {
-            const totalPrice = cart.reduce((sum, item) => sum + (item.prix * item.quantity), 0);
-            
-            cartTotalSpan.textContent = totalPrice.toFixed(2) + '€';
-
-            if(cart.length === 0) {
-                cartItemsDiv.innerHTML = '<p class="text-center text-neonBlue/60">Votre panier est vide.</p>';
-                return;
-            }
-
-            cartItemsDiv.innerHTML = cart.map(item => `
-                <div class="flex justify-between items-center text-sm border-b border-neonBlue/30 pb-3">
-                    <div class="flex flex-col">
-                        <span class="font-bungee text-white">${item.quantity}x ${item.nom}</span>
-                        <span class="text-xs text-neonBlue/70">${parseFloat(item.prix).toFixed(2)}€ /unité</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                         <span class="text-neonBlue font-bold text-lg">${(item.prix * item.quantity).toFixed(2)}€</span>
-                         <button onclick="removeFromCart('${item.id}')" class="text-neonPink hover:scale-110 transition">✕</button>
-                    </div>
+        function updateUI() {
+            document.getElementById('cart-count').innerText = cart.reduce((a, b) => a + b.qty, 0);
+            document.getElementById('cart-total').innerText = cart.reduce((a, b) => a + (b.prix * b.qty), 0).toFixed(2) + '€';
+            document.getElementById('cart-items').innerHTML = cart.map(item => `
+                <div class="flex justify-between text-sm">
+                    <span>${item.qty}x ${item.nom}</span>
+                    <span class="text-neonBlue">${(item.prix * item.qty).toFixed(2)}€</span>
                 </div>
             `).join('');
         }
-        
-        // Supprimer un produit du panier
-        window.removeFromCart = function(id) {
-            cart = cart.filter(item => item.id !== id);
-            updateCartUI();
+
+        function toggleCart() { document.getElementById('cart-modal').classList.toggle('hidden'); }
+
+        async function checkout() {
+            if (cart.length === 0) return;
+            const total = cart.reduce((a, b) => a + (b.prix * b.qty), 0);
+            const msg = `Nouvelle commande :\n` + cart.map(i => `- ${i.qty}x ${i.nom}`).join('\n') + `\nTotal: ${total}€`;
+            
+            // Sauvegarde Supabase
+            await supabase.from('commandes').insert([{ contenu: cart, total: total }]);
+            
+            window.open(`https://wa.me/33745517494?text=${encodeURIComponent(msg)}`, '_blank');
+            cart = []; updateUI(); toggleCart();
         }
 
-        // Finaliser la commande via WhatsApp (Checkout)
-        function checkoutWhatsApp() {
-            if(cart.length === 0) return alert("Votre panier est vide.");
-            
-            let message = "Bonjour Épicerie de Nuit ! Je souhaite commander :\n\n";
-            let total = 0;
-            
-            cart.forEach(item => {
-                const itemTotal = (item.prix * item.quantity).toFixed(2);
-                message += `- ${item.quantity}x ${item.nom} (${itemTotal}€)\n`;
-                total += item.prix * item.quantity;
-            });
-            
-            message += `\nTotal : ${total.toFixed(2)}€\n\nMerci !`;
-            
-            const whatsappNumber = "33745517494";
-            const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-            
-            // Ouvrir WhatsApp dans un nouvel onglet
-            window.open(url, '_blank');
-            
-            // Vider le panier après commande (optionnel)
-            cart = [];
-            toggleCart();
-        }
+        fetchProducts();
     </script>
 </body>
 </html>
